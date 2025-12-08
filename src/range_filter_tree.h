@@ -45,6 +45,10 @@ struct RangeFilterTreeIndex {
   using FilterRange = std::pair<FilterType, FilterType>;
   using FilterList = parlay::sequence<FilterType>;
 
+  // Allow our C++ wrapper to access private members
+  template<typename, typename, typename> friend class RangeFilterCppWrapper;
+
+#ifndef NO_PYTHON_BINDINGS
   // This constructor just sorts the input points and turns them into a
   // structure that's easier to work with. The actual work of building the index
   // happens in the private constructor below.
@@ -95,6 +99,7 @@ struct RangeFilterTreeIndex {
     });
     return std::make_pair(ids, dists);
   }
+#endif
 
 private:
   // Inclusive starts, exclusive ends
