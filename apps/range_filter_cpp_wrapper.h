@@ -76,11 +76,12 @@ public:
         // This finds the smallest partition containing the range and does smart postfiltering
         auto results = _index->optimized_postfiltering_search(query, range, query_params);
         
-        // Results are already in original ID space (handled by RangeFilterTreeIndex)
+        // Decode sorted IDs back to original IDs
         std::vector<pid> cpp_results;
         cpp_results.reserve(results.size());
         for (const auto& r : results) {
-            cpp_results.push_back(r);
+            // r.first is sorted index, decode to original index
+            cpp_results.push_back({static_cast<index_type>(_decoding[r.first]), r.second});
         }
         return cpp_results;
     }
