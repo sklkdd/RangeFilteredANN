@@ -54,19 +54,20 @@ public:
             sorted_filter_values[sorted_id] = filter_seq[filter_indices_sorted[sorted_id]];
         });
 
-        // Create PointRange with sorted data
-        auto sorted_point_range = std::make_shared<PR>(data_sorted.data(), n, d, d);
+        // Create PointRange with sorted data (3 args: data, n, dims)
+        auto sorted_point_range = std::make_shared<PR>(data_sorted.data(), n, d);
         
         // Build the actual RangeFilterTreeIndex (B-WST)
         // This creates the recursive tree structure with multiple indices
-        _index = std::make_unique<Index>(
+        // Use raw new instead of make_unique because constructor is private (we're a friend)
+        _index = std::unique_ptr<Index>(new Index(
             sorted_point_range,
             sorted_filter_values,
             _decoding,
             cutoff,
             split_factor,
             build_params
-        );
+        ));
     }
 
     // Optimized postfiltering search - the key RangeFilteredANN query method
