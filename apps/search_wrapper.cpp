@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
 
     using T = float;
     using Point = Euclidian_Point<T>;
-    using Index = RangeFilterCppWrapper<T, Point, PostfilterVamanaIndex>;
+    using Index = RangeFilterCppWrapper<T, Point>;
 
     // Restrict to 1 thread for query execution
     omp_set_num_threads(1);
