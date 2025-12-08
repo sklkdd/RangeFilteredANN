@@ -190,6 +190,7 @@ struct PostfilterVamanaIndex {
     return frontier;
   }
 
+#ifndef NO_PYTHON_BINDINGS
   // Does a batch of doubling postfiltering queries on the underlying index
   NeighborsAndDistances batch_search(
       py::array_t<T, py::array::c_style | py::array::forcecast> &queries,
