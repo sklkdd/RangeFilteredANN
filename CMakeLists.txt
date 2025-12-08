@@ -39,9 +39,11 @@ target_compile_options(fvecs_to_bin PRIVATE ${COMPILE_OPTIONS})
 # Build wrapper
 add_executable(build_wrapper apps/build_wrapper.cpp)
 target_compile_options(build_wrapper PRIVATE ${COMPILE_OPTIONS})
+target_compile_definitions(build_wrapper PRIVATE NO_PYTHON_BINDINGS)
 target_link_libraries(build_wrapper OpenMP::OpenMP_CXX)
 
 # Search wrapper  
 add_executable(search_wrapper apps/search_wrapper.cpp)
 target_compile_options(search_wrapper PRIVATE ${COMPILE_OPTIONS})
+target_compile_definitions(search_wrapper PRIVATE NO_PYTHON_BINDINGS)
 target_link_libraries(search_wrapper OpenMP::OpenMP_CXX)
