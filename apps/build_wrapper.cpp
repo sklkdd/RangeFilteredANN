@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
 
     using T = float;
     using Point = Euclidian_Point<T>;
-    using Index = RangeFilterCppWrapper<T, Point, PostfilterVamanaIndex>;
+    using Index = RangeFilterCppWrapper<T, Point>;
 
     // Use all available threads for building
     unsigned int nthreads = std::thread::hardware_concurrency();
