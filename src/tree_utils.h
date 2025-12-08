@@ -37,6 +37,7 @@ inline size_t first_greater_than_or_equal_to(
   return end;
 }
 
+#ifndef NO_PYTHON_BINDINGS
 template <typename FilterType, typename T, typename Point>
 auto sort_python_and_convert(py::array_t<T> points,
                              py::array_t<FilterType> filter_values) {
