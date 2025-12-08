@@ -89,6 +89,7 @@ struct PostfilterVamanaIndex {
     }
   }
 
+#ifndef NO_PYTHON_BINDINGS
   PostfilterVamanaIndex(py::array_t<T> points,
                         py::array_t<FilterType> filter_values,
                         BuildParams build_params) {
@@ -123,6 +124,7 @@ struct PostfilterVamanaIndex {
     *this = PostfilterVamanaIndex(std::move(tmp_points),
                                   std::move(tmp_filter_values), build_params);
   }
+#endif
 
   std::string graph_filename(std::string cache_path) {
     return cache_path + "vamana_" + std::to_string(build_params.L) + "_" +
@@ -218,6 +220,7 @@ struct PostfilterVamanaIndex {
 
     return std::make_pair(ids, dists);
   }
+#endif
 
 private:
   // Does a raw ANN query on the underlying index
