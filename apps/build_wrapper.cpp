@@ -5,11 +5,7 @@
 #include <memory>
 #include "fanns_survey_helpers.cpp"
 #include "global_thread_counter.h"
-
-#include "../ParlayANN/algorithms/utils/euclidian_point.h"
-#include "../ParlayANN/algorithms/utils/point_range.h"
-#include "../src/range_filter_tree.h"
-#include "../src/postfilter_vamana.h"
+#include "range_filter_cpp_wrapper.h"
 
 // Define global for thread counter
 std::atomic<int> peak_threads(1);
@@ -33,7 +29,7 @@ int main(int argc, char** argv) {
 
     using T = float;
     using Point = Euclidian_Point<T>;
-    using Index = RangeFilterTreeIndex<T, Point, PostfilterVamanaIndex>;
+    using Index = RangeFilterCppWrapper<T, Point, PostfilterVamanaIndex>;
 
     // Use all available threads for building
     unsigned int nthreads = std::thread::hardware_concurrency();
@@ -45,24 +41,32 @@ int main(int argc, char** argv) {
 
     // Load data BEFORE starting timer
     std::cout << "Loading data..." << std::endl;
-    auto points = std::make_shared<PointRange<T, Point>>(data_path.data());
+    FILE* fp = fopen(data_path.c_str(), "rb");
+    if (!fp) {
+        std::cerr << "Error: Cannot open " << data_path << std::endl;
+        return 1;
+    }
+    uint32_t n, d;
+    fread(&n, sizeof(uint32_t), 1, fp);
+    fread(&d, sizeof(uint32_t), 1, fp);
+    std::vector<T> data_vec(n * d);
+    fread(data_vec.data(), sizeof(T), n * d, fp);
+    fclose(fp);
+    
     auto filters = read_one_float_per_line(filters_path);
 
-    if (points->size() != filters.size()) {
-        std::cerr << "Error: Points (" << points->size() << ") and filters (" << filters.size() << ") size mismatch." << std::endl;
+    if (n != filters.size()) {
+        std::cerr << "Error: Points (" << n << ") and filters (" << filters.size() << ") size mismatch." << std::endl;
         return 1;
     }
 
-    std::cout << "Loaded " << points->size() << " points with " << filters.size() << " filter values" << std::endl;
-
-    // Convert vector to parlay::sequence
-    parlay::sequence<float> filter_seq(filters.begin(), filters.end());
+    std::cout << "Loaded " << n << " points (dim=" << d << ") with " << filters.size() << " filter values" << std::endl;
 
     // Start timing
     auto start_build = std::chrono::high_resolution_clock::now();
 
     BuildParams bp(R, L, alpha);
-    Index index(points, filter_seq, cutoff, split_factor, bp);
+    Index index(data_vec.data(), n, d, filters.data(), cutoff, split_factor, bp);
 
     // Stop timing
     auto end_build = std::chrono::high_resolution_clock::now();
