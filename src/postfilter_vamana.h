@@ -16,15 +16,16 @@
 #include <type_traits>
 #include <vector>
 
+#ifndef NO_PYTHON_BINDINGS
 #include "pybind11/numpy.h"
+namespace py = pybind11;
+using NeighborsAndDistances =
+    std::pair<py::array_t<unsigned int>, py::array_t<float>>;
+#endif
 
 #include "prefiltering.h"
 
 using index_type = int32_t;
-
-namespace py = pybind11;
-using NeighborsAndDistances =
-    std::pair<py::array_t<unsigned int>, py::array_t<float>>;
 
 template <typename T, typename Point, class PR = PointRange<T, Point>,
           typename FilterType = float_t>
