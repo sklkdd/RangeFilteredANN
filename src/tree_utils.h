@@ -4,12 +4,13 @@
 #include "parlay/parallel.h"
 #include "parlay/primitives.h"
 #include "parlay/sequence.h"
+#ifndef NO_PYTHON_BINDINGS
 #include "pybind11/numpy.h"
-#include <vector>
-
 namespace py = pybind11;
 using NeighborsAndDistances =
     std::pair<py::array_t<unsigned int>, py::array_t<float>>;
+#endif
+#include <vector>
 
 using index_type = int32_t;
 
