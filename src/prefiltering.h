@@ -73,6 +73,7 @@ struct PrefilterIndex {
         std::make_pair(filter_values_sorted[0], filter_values_sorted[n - 1]);
   }
 
+#ifndef NO_PYTHON_BINDINGS
   // BuildParams is unused for now but kept for API consistency
   PrefilterIndex(py::array_t<T> points, py::array_t<FilterType> filter_values,
                  BuildParams build_params) {
@@ -145,6 +146,7 @@ struct PrefilterIndex {
 
     return std::make_pair(ids, dists);
   }
+#endif
 
   parlay::sequence<pid> query(Point q, std::pair<FilterType, FilterType> filter,
                               QueryParams query_params) {
