@@ -98,3 +98,6 @@ auto sort_python_and_convert(py::array_t<T> points,
 
   return std::make_tuple(point_range, filter_values_sorted, decoding);
 }
+#endif
+
+#endif
