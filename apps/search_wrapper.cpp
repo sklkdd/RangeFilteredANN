@@ -7,11 +7,7 @@
 #include <omp.h>
 #include "fanns_survey_helpers.cpp"
 #include "global_thread_counter.h"
-
-#include "../ParlayANN/algorithms/utils/euclidian_point.h"
-#include "../ParlayANN/algorithms/utils/point_range.h"
-#include "../src/range_filter_tree.h"
-#include "../src/postfilter_vamana.h"
+#include "range_filter_cpp_wrapper.h"
 
 // Define global for thread counter
 std::atomic<int> peak_threads(1);
@@ -39,7 +35,7 @@ int main(int argc, char** argv) {
 
     using T = float;
     using Point = Euclidian_Point<T>;
-    using Index = RangeFilterTreeIndex<T, Point, PostfilterVamanaIndex>;
+    using Index = RangeFilterCppWrapper<T, Point, PostfilterVamanaIndex>;
 
     // Restrict to 1 thread for query execution
     omp_set_num_threads(1);
@@ -50,32 +46,53 @@ int main(int argc, char** argv) {
 
     // Load data and build index (not timed - should have been done in build phase)
     std::cout << "Loading data and rebuilding index..." << std::endl;
-    auto points = std::make_shared<PointRange<T, Point>>(data_path.data());
-    auto filters = read_one_float_per_line(filters_path);
-    parlay::sequence<float> filter_seq(filters.begin(), filters.end());
+    FILE* fp = fopen(data_path.c_str(), "rb");
+    uint32_t n, d;
+    fread(&n, sizeof(uint32_t), 1, fp);
+    fread(&d, sizeof(uint32_t), 1, fp);
+    std::vector<T> data_vec(n * d);
+    fread(data_vec.data(), sizeof(T), n * d, fp);
+    fclose(fp);
     
+    auto filters = read_one_float_per_line(filters_path);
     BuildParams bp(R, L, alpha);
-    Index index(points, filter_seq, cutoff, split_factor, bp);
+    Index index(data_vec.data(), n, d, filters.data(), cutoff, split_factor, bp);
 
     // Load queries
     std::cout << "Loading queries..." << std::endl;
-    auto queries = std::make_shared<PointRange<T, Point>>(queries_path.data());
+    fp = fopen(queries_path.c_str(), "rb");
+    if (!fp) {
+        std::cerr << "Error: Cannot open " << queries_path << std::endl;
+        return 1;
+    }
+    uint32_t num_queries, query_dim;
+    fread(&num_queries, sizeof(uint32_t), 1, fp);
+    fread(&query_dim, sizeof(uint32_t), 1, fp);
+    if (query_dim != d) {
+        std::cerr << "Error: Query dimension (" << query_dim << ") doesn't match data dimension (" << d << ")" << std::endl;
+        fclose(fp);
+        return 1;
+    }
+    std::vector<T> query_vec(num_queries * query_dim);
+    fread(query_vec.data(), sizeof(T), num_queries * query_dim, fp);
+    fclose(fp);
+    
     auto query_filters = read_two_floats_per_line(query_filters_path);
 
-    if (queries->size() != query_filters.size()) {
+    if (num_queries != query_filters.size()) {
         std::cerr << "Error: Queries and query filters size mismatch." << std::endl;
         return 1;
     }
 
     // Load ground truth
     auto gt = read_ivecs(gt_path);
-    if (gt.size() != queries->size()) {
-        std::cerr << "Error: Ground truth size (" << gt.size() << ") doesn't match queries (" << queries->size() << ")" << std::endl;
+    if (gt.size() != num_queries) {
+        std::cerr << "Error: Ground truth size (" << gt.size() << ") doesn't match queries (" << num_queries << ")" << std::endl;
         return 1;
     }
 
     // Store query results for recall calculation
-    std::vector<std::vector<unsigned int>> query_results(queries->size());
+    std::vector<std::vector<unsigned int>> query_results(num_queries);
 
     // Start timing
     auto start_search = std::chrono::high_resolution_clock::now();
@@ -88,18 +105,18 @@ int main(int argc, char** argv) {
     qp.degree_limit = 10000;
 
     // Execute queries (single-threaded)
-    for (size_t i = 0; i < queries->size(); ++i) {
-        Point q = (*queries)[i];
+    for (size_t i = 0; i < num_queries; ++i) {
+        Point q(query_vec.data() + i * query_dim, query_dim, query_dim, i);
         std::pair<float, float> filter = query_filters[i];
         
         // Use optimized_postfilter method
         auto results = index.optimized_postfiltering_search(q, filter, qp);
         
-        // Store results
+        // Store results (already mapped to original IDs by wrapper)
         query_results[i].reserve(K);
         for (auto& res : results) {
             if (query_results[i].size() >= K) break;
-            query_results[i].push_back(index._sorted_index_to_original_point_id.at(res.first));
+            query_results[i].push_back(res.first);
         }
     }
 
@@ -113,7 +130,7 @@ int main(int argc, char** argv) {
 
     // Calculate recall (not timed)
     int total_correct = 0;
-    for (size_t i = 0; i < queries->size(); ++i) {
+    for (size_t i = 0; i < num_queries; ++i) {
         std::set<unsigned int> result_set(query_results[i].begin(), query_results[i].end());
         
         for (size_t j = 0; j < K && j < gt[i].size(); ++j) {
@@ -123,8 +140,8 @@ int main(int argc, char** argv) {
         }
     }
 
-    float recall = (float)total_correct / (queries->size() * K);
-    float qps = queries->size() / elapsed.count();
+    double recall = static_cast<double>(total_correct) / (num_queries * K);
+    double qps = num_queries / elapsed.count();
 
     // Print statistics
     std::cout << "Query execution completed." << std::endl;
