@@ -12,14 +12,15 @@
 #include <type_traits>
 #include <vector>
 
+#ifndef NO_PYTHON_BINDINGS
 #include "pybind11/numpy.h"
-
-using index_type = int32_t;
-using FilterType = float;
-
 namespace py = pybind11;
 using NeighborsAndDistances =
     std::pair<py::array_t<unsigned int>, py::array_t<float>>;
+#endif
+
+using index_type = int32_t;
+using FilterType = float;
 
 using pid = std::pair<index_type, float>;
 
