@@ -2,8 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(DPC-ANN LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(Python 3 COMPONENTS Interpreter Development.Module REQUIRED)
-find_package(pybind11 CONFIG REQUIRED)
+# Note: Python/pybind11 removed - not needed for C++ benchmarking wrappers
 find_package(OpenMP REQUIRED)
 
 # -------------------------- Includes ------------------------------------------
@@ -20,15 +19,6 @@ set(COMPILE_OPTIONS
     $<$<CONFIG:RelWithDebInfo>:-std=c++17 -O3 -DHOMEGROWN -mcx16 -pthread -march=native -DNDEBUG -fPIC -g>
     $<$<CONFIG:Release>:-std=c++17 -O3 -DHOMEGROWN -mcx16 -pthread -march=native -DNDEBUG -fPIC>
 )
-
-# --------------------- Create Python Library --------------------------------------
-
-set(CC_SOURCES
-    python_bindings/python_bindings.cpp
-)
-
-pybind11_add_module(window_ann ${CC_SOURCES})
-target_compile_options(window_ann PRIVATE ${COMPILE_OPTIONS})
 
 # --------------------- Create Wrapper Executables --------------------------------------
 
