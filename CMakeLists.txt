@@ -37,3 +37,9 @@ add_executable(search_wrapper apps/search_wrapper.cpp)
 target_compile_options(search_wrapper PRIVATE ${COMPILE_OPTIONS})
 target_compile_definitions(search_wrapper PRIVATE NO_PYTHON_BINDINGS)
 target_link_libraries(search_wrapper OpenMP::OpenMP_CXX)
+
+# Combined build+query wrapper (like SeRF) - builds index once and queries with multiple L_search values
+add_executable(index_construction_and_query_execution apps/index_construction_and_query_execution.cpp)
+target_compile_options(index_construction_and_query_execution PRIVATE ${COMPILE_OPTIONS})
+target_compile_definitions(index_construction_and_query_execution PRIVATE NO_PYTHON_BINDINGS)
+target_link_libraries(index_construction_and_query_execution OpenMP::OpenMP_CXX)
