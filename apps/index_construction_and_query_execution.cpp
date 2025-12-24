@@ -181,8 +181,13 @@ int main(int argc, char** argv) {
     // ========== QUERY EXECUTION (TIMED per L_search value) ==========
     std::cout << "\n--- Starting query execution ---" << std::endl;
 
-    // Force single-threaded query execution
-    omp_set_num_threads(1);
+    // NOTE: RangeFilteredANN uses Parlay library for parallelism, which is independent of OpenMP.
+    // The Parlay scheduler is initialized at program startup and reads PARLAY_NUM_THREADS from
+    // the environment. omp_set_num_threads() has NO EFFECT on Parlay's thread pool.
+    // 
+    // To ensure single-threaded query execution, the Python wrapper sets PARLAY_NUM_THREADS=1
+    // before launching this process. The call below is kept for documentation but is ineffective.
+    omp_set_num_threads(1);  // Ineffective for Parlay - see comment above
     
     // Start thread monitoring for query phase
     std::atomic<bool> done_query(false);
